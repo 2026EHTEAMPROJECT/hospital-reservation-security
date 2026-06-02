@@ -1,0 +1,19 @@
+# Keycloak 로그인 UI / 토큰 엔드포인트를 Istio Gateway로 외부 노출한다.
+# (예시의 loginserver용 nginx ingress를 Istio로 대체)
+# 전용 호스트 keycloak.local 을 사용해 기존 hospital-vs("*") 라우팅과 충돌 회피.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: keycloak-vs
+  namespace: hospital-dev
+spec:
+  hosts:
+    - "keycloak.local"
+  gateways:
+    - hospital-gateway        # ops 레포 infra/gateway.yaml 에 정의된 게이트웨이 재사용
+  http:
+    - route:
+        - destination:
+            host: keycloak.hospital-dev.svc.cluster.local
+            port:
+              number: 8080

@@ -1,0 +1,25 @@
+# 예시(loginserver)의 nginx auth-url forward-auth 검증을 대체한다.
+# 사이드카가 Keycloak JWKS 공개키로 JWT 서명/만료/issuer를 "로컬에서" 검증한다.
+# (매 요청 authserver /validate 동기호출이 사라짐 → 지연·SPOF 해소)
+#
+# RequestAuthentication은 "토큰이 있으면 검증"만 한다. 토큰을 "요구"하는 것은
+# 아래 AuthorizationPolicy의 역할이다(둘을 함께 써야 보호가 완성됨).
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: keycloak-jwt
+  namespace: hospital-dev
+spec:
+  # hospital-dev의 모든 워크로드에 적용(selector 없음 = 네임스페이스 전역).
+  # Keycloak 자신은 토큰 없이도 접근돼야 하지만, RequestAuthentication은
+  # 토큰이 없으면 통과시키므로 Keycloak 로그인 트래픽에는 영향 없음.
+  jwtRules:
+    - issuer: "http://keycloak.hospital-dev.svc.cluster.local:8080/realms/hospital"
+      jwksUri: "http://keycloak.hospital-dev.svc.cluster.local:8080/realms/hospital/protocol/openid-connect/certs"
+      # 검증된 토큰의 클레임을 백엔드로 전달(예시의 X-Authenticated-User 대체).
+      outputClaimToHeaders:
+        - header: X-Auth-User
+          claim: preferred_username
+        - header: X-Auth-Subject
+          claim: sub
+      forwardOriginalToken: true

@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: hospital-dev
+  labels:
+    app: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.0
+          # start-dev: 개발용(H2 내장 DB). 운영은 start + 외부 PostgreSQL 권장.
+          args:
+            - start-dev
+            - --import-realm
+          env:
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: admin
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              # 데모용. 운영에서는 반드시 Secret + 로테이션.
+              value: admin123
+            # 토큰의 iss(issuer)를 클러스터 내부 DNS로 고정한다.
+            # Istio RequestAuthentication / Spring resource server의 issuer-uri와 반드시 일치해야 한다.
+            - name: KC_HOSTNAME
+              value: http://keycloak.hospital-dev.svc.cluster.local:8080
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 9000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm-import
+          configMap:
+            name: keycloak-realm-import
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: hospital-dev
+  labels:
+    app: keycloak
+spec:
+  type: ClusterIP
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080

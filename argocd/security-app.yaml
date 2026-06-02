@@ -1,0 +1,22 @@
+# 이 보안 레포를 ArgoCD가 hospital-dev에 자동 동기화하도록 등록.
+# (사용자가 GitHub에 이 레포를 생성·푸시한 뒤 적용)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hospital-security
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/2026EHTEAMPROJECT/hospital-reservation-security.git
+    targetRevision: HEAD
+    path: .
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: hospital-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

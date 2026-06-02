@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hospital-dev
+
+resources:
+  - keycloak/keycloak.yaml
+  - keycloak/keycloak-gateway.yaml
+  - istio/peer-authentication.yaml
+  - istio/request-authentication.yaml
+  - istio/authorization-policy.yaml
+
+# realm import JSON을 ConfigMap(keycloak-realm-import)으로 생성.
+# keycloak.yaml의 volume이 이 이름을 정적 참조하므로 해시 접미사 비활성화.
+configMapGenerator:
+  - name: keycloak-realm-import
+    files:
+      - keycloak/realm/hospital-realm.json
+
+generatorOptions:
+  disableNameSuffixHash: true

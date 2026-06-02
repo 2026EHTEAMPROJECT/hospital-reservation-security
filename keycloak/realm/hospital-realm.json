@@ -1,0 +1,80 @@
+{
+  "realm": "hospital",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "accessTokenLifespan": 3600,
+  "roles": {
+    "realm": [
+      { "name": "PATIENT", "description": "환자" },
+      { "name": "DOCTOR", "description": "의료진" },
+      { "name": "ADMIN", "description": "관리자" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "hospital-frontend",
+      "name": "Hospital Frontend (Public)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      }
+    },
+    {
+      "clientId": "hospital-services",
+      "name": "Hospital Backend Services (Confidential)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "change-me-service-secret"
+    }
+  ],
+  "users": [
+    {
+      "username": "patient1",
+      "enabled": true,
+      "email": "patient1@hospital.local",
+      "emailVerified": true,
+      "firstName": "Patient",
+      "lastName": "One",
+      "credentials": [
+        { "type": "password", "value": "pass1234", "temporary": false }
+      ],
+      "realmRoles": ["PATIENT"]
+    },
+    {
+      "username": "doctor1",
+      "enabled": true,
+      "email": "doctor1@hospital.local",
+      "emailVerified": true,
+      "firstName": "Doctor",
+      "lastName": "One",
+      "credentials": [
+        { "type": "password", "value": "pass1234", "temporary": false }
+      ],
+      "realmRoles": ["DOCTOR"]
+    },
+    {
+      "username": "admin1",
+      "enabled": true,
+      "email": "admin1@hospital.local",
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "One",
+      "credentials": [
+        { "type": "password", "value": "pass1234", "temporary": false }
+      ],
+      "realmRoles": ["ADMIN"]
+    }
+  ]
+}

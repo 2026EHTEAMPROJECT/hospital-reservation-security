@@ -1,0 +1,103 @@
+# 검증된 JWT를 "요구"하는 계층. RequestAuthentication(서명검증) + 이 정책(인가)을
+# 함께 적용해야 비로소 보호가 완성된다.
+#
+# Istio ALLOW 정책의 동작: 워크로드에 ALLOW 정책이 하나라도 붙으면,
+# 그 정책의 rule 중 하나라도 매칭돼야 요청이 허용된다(나머지는 거부).
+# → 공개 경로는 무인증 허용 rule, 보호 경로는 requestPrincipals 요구 rule로 구성.
+---
+# user-service: 화면/정적/회원가입 경로는 공개, 그 외 API는 인증 필요
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: user-service-authz
+  namespace: hospital-dev
+spec:
+  selector:
+    matchLabels:
+      app: user-service
+  action: ALLOW
+  rules:
+    # (1) 공개 경로: 메인 화면/정적/헬스/스웨거 + 회원가입/로그인. 토큰 불필요.
+    #     signup/login은 토큰을 "발급받기 전" 호출이므로 반드시 공개여야 한다.
+    - to:
+        - operation:
+            paths:
+              - "/"
+              - "/css/*"
+              - "/js/*"
+              - "/images/*"
+              - "/actuator/*"
+              - "/swagger-ui/*"
+              - "/v3/api-docs/*"
+              - "/api/users/signup"
+              - "/api/users/login"
+    # (2) 그 외 모든 경로: 유효한 Keycloak JWT를 가진 사용자만.
+    #     서비스 간 호출(booking→user)은 Feign 인터셉터가 사용자 토큰을 릴레이하므로 통과.
+    - from:
+        - source:
+            requestPrincipals: ["*"]
+---
+# booking-service: 예약 API는 전부 인증 필요. 전체조회는 ADMIN만(역할 예시).
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: booking-service-authz
+  namespace: hospital-dev
+spec:
+  selector:
+    matchLabels:
+      app: booking-service
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            paths: ["/actuator/*"]
+    # 모든 예약 API(정확경로 + 하위경로)는 유효한 Keycloak JWT 필요.
+    # 컨트롤러가 POST/GET "/api/reservations"(정확)와 "/api/reservations/{...}"를 모두 쓰므로 둘 다 포함.
+    # 역할(ADMIN 전용 전체조회 등) 기반 세분화는 Keycloak protocol mapper로 roles를
+    # top-level claim으로 평탄화한 뒤 when 절로 추가한다(README P1 참고). nested
+    # request.auth.claims[realm_access][roles] 매칭은 Istio에서 신뢰성이 낮아 보류.
+    - from:
+        - source:
+            requestPrincipals: ["*"]
+      to:
+        - operation:
+            paths: ["/api/reservations", "/api/reservations/*"]
+---
+# payment-service: 결제 조회 API 인증 필요
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: payment-service-authz
+  namespace: hospital-dev
+spec:
+  selector:
+    matchLabels:
+      app: payment-service
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            paths: ["/actuator/*"]
+    - from:
+        - source:
+            requestPrincipals: ["*"]
+---
+# notification-service: SSE 스트림/조회 인증 필요
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: notification-service-authz
+  namespace: hospital-dev
+spec:
+  selector:
+    matchLabels:
+      app: notification-service
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            paths: ["/actuator/*"]
+    - from:
+        - source:
+            requestPrincipals: ["*"]
