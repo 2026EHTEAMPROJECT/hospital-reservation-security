@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
@@ -52,12 +53,17 @@ public class LoginController {
                     .retrieve()
                     .body(Map.class);
 
-            Map<String, Object> filtered = new HashMap<>();
-            if (keycloakResponse != null) {
-                filtered.put("access_token", keycloakResponse.get("access_token"));
-                filtered.put("token_type", keycloakResponse.get("token_type"));
-                filtered.put("expires_in", keycloakResponse.get("expires_in"));
+            if (keycloakResponse == null || keycloakResponse.get("access_token") == null) {
+                log.warn("Keycloak returned 200 but access_token is null");
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "auth_server_error");
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
             }
+
+            Map<String, Object> filtered = new HashMap<>();
+            filtered.put("access_token", keycloakResponse.get("access_token"));
+            filtered.put("token_type", keycloakResponse.get("token_type"));
+            filtered.put("expires_in", keycloakResponse.get("expires_in"));
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("Cache-Control", "no-store");
@@ -78,6 +84,11 @@ public class LoginController {
                 error.put("error", "auth_server_error");
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
             }
+        } catch (ResourceAccessException e) {
+            log.warn("Keycloak connection error: {}", e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "auth_server_error");
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
         }
     }
 }
