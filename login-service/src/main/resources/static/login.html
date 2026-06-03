@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>병원 예약 로그인</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 400px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      color: #1a1a1a;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    label {
+      display: block;
+      font-size: 0.875rem;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 18px;
+      transition: border-color 0.2s;
+    }
+    input:focus { outline: none; border-color: #4f46e5; }
+    button {
+      width: 100%;
+      padding: 11px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4338ca; }
+    button:disabled { background: #a5b4fc; cursor: not-allowed; }
+    .register-link {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 0.875rem;
+      color: #666;
+    }
+    .register-link a { color: #4f46e5; text-decoration: none; }
+    .register-link a:hover { text-decoration: underline; }
+    #result {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      word-break: break-all;
+      display: none;
+    }
+    #result.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    #result.error   { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>로그인</h1>
+    <form id="loginForm">
+      <label for="username">사용자명</label>
+      <input type="text" id="username" placeholder="사용자명을 입력하세요" required />
+
+      <label for="password">비밀번호</label>
+      <input type="password" id="password" placeholder="비밀번호를 입력하세요" required />
+
+      <button type="submit" id="submitBtn">로그인</button>
+    </form>
+
+    <div class="register-link">
+      회원가입은 Keycloak에서 &nbsp;
+      <a href="http://keycloak.local/realms/hospital/protocol/openid-connect/registrations?client_id=hospital-frontend&response_type=code&redirect_uri=http%3A%2F%2Flocalhost"
+         target="_blank" rel="noopener">
+        회원가입 &rarr;
+      </a>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const resultEl = document.getElementById('result');
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      btn.disabled = true;
+      btn.textContent = '로그인 중...';
+      resultEl.style.display = 'none';
+      resultEl.className = '';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const text = await res.text();
+        if (res.ok) {
+          let accessToken = text;
+          try {
+            const json = JSON.parse(text);
+            accessToken = json.access_token ?? text;
+          } catch (_) {}
+          resultEl.className = 'success';
+          resultEl.textContent = 'access_token: ' + accessToken;
+        } else {
+          resultEl.className = 'error';
+          resultEl.textContent = '로그인 실패 (' + res.status + '): ' + text;
+        }
+      } catch (err) {
+        resultEl.className = 'error';
+        resultEl.textContent = '네트워크 오류: ' + err.message;
+      } finally {
+        resultEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '로그인';
+      }
+    });
+  </script>
+</body>
+</html>

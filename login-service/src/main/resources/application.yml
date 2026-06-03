@@ -1,0 +1,13 @@
+server:
+  port: 8085
+spring:
+  application:
+    name: login-service
+keycloak:
+  token-uri: ${KEYCLOAK_TOKEN_URI:http://keycloak.hospital-dev.svc.cluster.local:8080/realms/hospital/protocol/openid-connect/token}
+  client-id: ${KEYCLOAK_CLIENT_ID:hospital-frontend}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

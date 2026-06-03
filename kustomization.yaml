@@ -6,6 +6,7 @@ namespace: hospital-dev
 resources:
   - keycloak/keycloak.yaml
   - keycloak/keycloak-gateway.yaml
+  - login-service/k8s.yaml
   - istio/peer-authentication.yaml
   - istio/request-authentication.yaml
   - istio/authorization-policy.yaml

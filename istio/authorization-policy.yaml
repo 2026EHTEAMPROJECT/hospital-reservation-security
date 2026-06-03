@@ -29,8 +29,8 @@ spec:
               - "/actuator/*"
               - "/swagger-ui/*"
               - "/v3/api-docs/*"
-              - "/api/users/signup"
-              - "/api/users/login"
+              # 로그인/회원가입은 login-service(/api/login) 및 Keycloak으로 이관됨.
+              # user-service의 /api/users/signup·login 엔드포인트는 제거되어 공개 룰 불필요.
     # (2) 그 외 모든 경로: 유효한 Keycloak JWT를 가진 사용자만.
     #     서비스 간 호출(booking→user)은 Feign 인터셉터가 사용자 토큰을 릴레이하므로 통과.
     - from:
@@ -101,3 +101,18 @@ spec:
     - from:
         - source:
             requestPrincipals: ["*"]
+---
+# login-service: 로그인/토큰발급 진입점이므로 토큰 없이 공개 접근 허용.
+# (Keycloak token 엔드포인트를 프론팅하는 BFF — 인증 "전" 단계라 보호 대상 아님)
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: login-service-authz
+  namespace: hospital-dev
+spec:
+  selector:
+    matchLabels:
+      app: login-service
+  action: ALLOW
+  rules:
+    - {}   # 모든 요청 허용(공개). login-service 자체는 민감 데이터를 직접 보유하지 않는다.
