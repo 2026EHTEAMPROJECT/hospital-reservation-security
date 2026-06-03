@@ -7,5 +7,7 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+RUN useradd -r -u 1001 appuser
+USER 1001
 EXPOSE 8085
 ENTRYPOINT ["java","-jar","/app/app.jar"]
