@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: login-service
+  namespace: hospital-dev
+  labels:
+    app: login-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: login-service
+  template:
+    metadata:
+      labels:
+        app: login-service
+    spec:
+      containers:
+        - name: login-service
+          # CI가 빌드/푸시할 이미지(아직 없으면 빌드 후 태그 교체). 다른 서비스 네이밍과 일치시킴.
+          image: edenriel/hospital-login:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8085
+          env:
+            - name: KEYCLOAK_TOKEN_URI
+              value: http://keycloak.hospital-dev.svc.cluster.local:8080/realms/hospital/protocol/openid-connect/token
+            - name: KEYCLOAK_CLIENT_ID
+              value: hospital-frontend
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: login-service
+  namespace: hospital-dev
+  labels:
+    app: login-service
+spec:
+  type: ClusterIP
+  selector:
+    app: login-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8085
+      targetPort: 8085
