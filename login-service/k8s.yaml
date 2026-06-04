@@ -17,9 +17,10 @@ spec:
     spec:
       containers:
         - name: login-service
-          # CI가 빌드/푸시할 이미지(아직 없으면 빌드 후 태그 교체). 다른 서비스 네이밍과 일치시킴.
+          # CI가 빌드/푸시할 이미지. kustomization.yaml의 images.newTag(커밋 SHA)가 태그를 덮어쓴다.
           image: edenriel/hospital-login:latest
-          imagePullPolicy: Always
+          # SHA 태그는 불변이므로 IfNotPresent로 충분(불필요한 재pull 방지).
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8085
           env:

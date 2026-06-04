@@ -1,0 +1,75 @@
+name: CI/CD
+
+# login-service를 빌드·푸시하고, 루트 kustomization의 이미지 태그를 갱신해
+# ArgoCD(hospital-security app)가 자동 재배포하도록 한다.
+# 다른 서비스(ci.yml)와 동일 패턴이되, login-service가 하위 디렉토리이고
+# 태그 갱신을 ops가 아닌 "이 레포 자신"의 kustomization.yaml에 한다.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "login-service/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "login-service/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 마지막 단계에서 kustomization.yaml newTag 갱신을 이 레포에 push 하므로
+    # GITHUB_TOKEN에 쓰기 권한이 필요(없으면 git push가 403으로 실패).
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('login-service/**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build and test with Maven
+        working-directory: login-service
+        run: mvn clean verify -DskipTests --batch-mode
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/hospital-login:${{ github.sha }} login-service
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/hospital-login:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/hospital-login:latest
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push Docker image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hospital-login:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hospital-login:latest
+
+      - name: Update image tag (this repo) for ArgoCD
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          sed -i "s/newTag: .*/newTag: ${{ github.sha }}/" kustomization.yaml
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git add kustomization.yaml
+          # [skip ci]로 커밋 루프 방지
+          git commit -m "ci: update login-service image tag to ${{ github.sha }} [skip ci]" || echo "no change"
+          git push
