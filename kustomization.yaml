@@ -16,7 +16,7 @@ resources:
 # (다른 서비스가 ops overlay에서 newTag를 갱신하는 것과 동일한 메커니즘)
 images:
   - name: edenriel/hospital-login
-    newTag: latest
+    newTag: 132a5dcf96de16c1648e511449d5e05d30f57e3b
 
 # realm import JSON을 ConfigMap(keycloak-realm-import)으로 생성.
 # keycloak.yaml의 volume이 이 이름을 정적 참조하므로 해시 접미사 비활성화.
