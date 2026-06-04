@@ -11,6 +11,13 @@ resources:
   - istio/request-authentication.yaml
   - istio/authorization-policy.yaml
 
+# login-service 이미지 태그. CI(.github/workflows/ci.yml)가 main 머지 시
+# newTag를 커밋 SHA로 갱신하고, ArgoCD가 이 변화를 감지해 자동 재배포한다.
+# (다른 서비스가 ops overlay에서 newTag를 갱신하는 것과 동일한 메커니즘)
+images:
+  - name: edenriel/hospital-login
+    newTag: latest
+
 # realm import JSON을 ConfigMap(keycloak-realm-import)으로 생성.
 # keycloak.yaml의 volume이 이 이름을 정적 참조하므로 해시 접미사 비활성화.
 configMapGenerator:
