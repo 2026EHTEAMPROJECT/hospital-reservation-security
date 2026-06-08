@@ -6,6 +6,14 @@ spring:
 keycloak:
   token-uri: ${KEYCLOAK_TOKEN_URI:http://keycloak.hospital-dev.svc.cluster.local:8080/realms/hospital/protocol/openid-connect/token}
   client-id: ${KEYCLOAK_CLIENT_ID:hospital-frontend}
+  # 회원가입(/api/register)에서 Keycloak Admin API 호출에 사용
+  base-url: ${KEYCLOAK_BASE_URL:http://keycloak.hospital-dev.svc.cluster.local:8080}
+  realm: ${KEYCLOAK_REALM:hospital}
+  admin:
+    token-uri: ${KEYCLOAK_ADMIN_TOKEN_URI:http://keycloak.hospital-dev.svc.cluster.local:8080/realms/master/protocol/openid-connect/token}
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+    username: ${KEYCLOAK_ADMIN_USERNAME:admin}
+    password: ${KEYCLOAK_ADMIN_PASSWORD:admin123}
 management:
   endpoints:
     web:
