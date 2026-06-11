@@ -89,10 +89,26 @@ public class RegisterController {
         credential.put("value", request.password());
         credential.put("temporary", false);
 
+        // realm hospital 의 User Profile 은 firstName, lastName 을 모두 필수로 둔다.
+        // 회원가입 폼은 이름 1개만 받으므로 lastName 이 비면 사용자는 만들어지지만
+        // 로그인 시 VERIFY_PROFILE 이 걸려 "Account is not fully set up"(invalid_grant)
+        // 으로 막힌다. 그래서 단일 이름을 firstName/lastName 으로 나눠 둘 다 채운다.
+        //   - 공백이 있으면 앞=firstName, 뒤=lastName ("John Doe" → John / Doe)
+        //   - 공백이 없으면(한국 이름 등) 같은 값을 양쪽에 넣어 필수 검증을 통과시킨다.
+        String fullName = request.name() == null ? "" : request.name().trim();
+        String firstName = fullName;
+        String lastName = fullName;
+        int sp = fullName.indexOf(' ');
+        if (sp > 0) {
+            firstName = fullName.substring(0, sp).trim();
+            lastName = fullName.substring(sp + 1).trim();
+        }
+
         Map<String, Object> user = new HashMap<>();
         user.put("username", request.email());
         user.put("email", request.email());
-        user.put("firstName", request.name());
+        user.put("firstName", firstName);
+        user.put("lastName", lastName);
         user.put("enabled", true);
         user.put("emailVerified", true);
         user.put("credentials", List.of(credential));
