@@ -23,3 +23,23 @@ spec:
         - header: X-Auth-Subject
           claim: sub
       forwardOriginalToken: true
+---
+# 회원가입(/api/register) 전용: login-service 가 Keycloak Admin API 를 호출할 때
+# master realm 의 admin 토큰(admin-cli)을 Bearer 로 보낸다. 위 네임스페이스 전역
+# 규칙은 hospital realm issuer 만 알기에, Keycloak 사이드카가 master 토큰을
+# "Jwt issuer is not configured"(401)로 막아 사용자 생성이 실패했다.
+# 그래서 Keycloak 워크로드에 한해 master realm issuer 도 인정하도록 추가한다.
+# (Keycloak 한정 selector — 다른 서비스는 여전히 hospital realm 토큰만 받는다.)
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: keycloak-admin-master-jwt
+  namespace: hospital-dev
+spec:
+  selector:
+    matchLabels:
+      app: keycloak
+  jwtRules:
+    - issuer: "http://keycloak.hospital-dev.svc.cluster.local:8080/realms/master"
+      jwksUri: "http://keycloak.hospital-dev.svc.cluster.local:8080/realms/master/protocol/openid-connect/certs"
+      forwardOriginalToken: true
