@@ -7,9 +7,18 @@
   "accessTokenLifespan": 3600,
   "roles": {
     "realm": [
-      { "name": "PATIENT", "description": "환자" },
-      { "name": "DOCTOR", "description": "의료진" },
-      { "name": "ADMIN", "description": "관리자" }
+      {
+        "name": "PATIENT",
+        "description": "환자"
+      },
+      {
+        "name": "DOCTOR",
+        "description": "의료진"
+      },
+      {
+        "name": "ADMIN",
+        "description": "관리자"
+      }
     ]
   },
   "clients": [
@@ -21,11 +30,32 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
       "attributes": {
         "post.logout.redirect.uris": "+"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "phoneNumber",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "multivalued": "false",
+            "user.attribute": "phoneNumber",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "phoneNumber",
+            "jsonType.label": "String"
+          }
+        }
+      ]
     },
     {
       "clientId": "hospital-services",
@@ -48,9 +78,15 @@
       "firstName": "Patient",
       "lastName": "One",
       "credentials": [
-        { "type": "password", "value": "pass1234", "temporary": false }
+        {
+          "type": "password",
+          "value": "pass1234",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["PATIENT"]
+      "realmRoles": [
+        "PATIENT"
+      ]
     },
     {
       "username": "doctor1",
@@ -60,9 +96,15 @@
       "firstName": "Doctor",
       "lastName": "One",
       "credentials": [
-        { "type": "password", "value": "pass1234", "temporary": false }
+        {
+          "type": "password",
+          "value": "pass1234",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["DOCTOR"]
+      "realmRoles": [
+        "DOCTOR"
+      ]
     },
     {
       "username": "admin1",
@@ -72,9 +114,28 @@
       "firstName": "Admin",
       "lastName": "One",
       "credentials": [
-        { "type": "password", "value": "pass1234", "temporary": false }
+        {
+          "type": "password",
+          "value": "pass1234",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["ADMIN"]
+      "realmRoles": [
+        "ADMIN"
+      ]
     }
-  ]
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"phoneNumber\",\"displayName\":\"전화번호\",\"validations\":{},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ]
+  }
 }
